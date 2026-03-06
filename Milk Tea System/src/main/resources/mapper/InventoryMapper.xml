@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.milkteasystem.mapper.InventoryMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.example.milkteasystem.entity.Inventory">
+        <id column="inventory_id" property="inventoryId" />
+        <result column="product_id" property="productId" />
+        <result column="stock" property="stock" />
+        <result column="sold" property="sold" />
+        <result column="update_time" property="updateTime" />
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        inventory_id, product_id, stock, sold, update_time
+    </sql>
+
+</mapper>
