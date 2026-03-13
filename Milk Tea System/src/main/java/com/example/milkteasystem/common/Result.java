@@ -6,7 +6,7 @@ import java.io.Serializable;
 
 @Data
 public class Result implements Serializable {
-    private static final  long seriaVersionUID =1L;
+    private static final  long serialVersionUID =1L;
 
     //状态码
     private  int code;
