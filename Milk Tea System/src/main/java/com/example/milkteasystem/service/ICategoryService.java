@@ -2,6 +2,7 @@ package com.example.milkteasystem.service;
 
 import com.example.milkteasystem.entity.Category;
 import com.baomidou.mybatisplus.extension.service.IService;
+import java.util.List;
 
 /**
  * <p>
@@ -13,4 +14,10 @@ import com.baomidou.mybatisplus.extension.service.IService;
  */
 public interface ICategoryService extends IService<Category> {
 
+    /**
+     * 获取分类列表（按sort排序）
+     * @return 分类列表
+     */
+    List<Category> getCategoryList();
 }
+
