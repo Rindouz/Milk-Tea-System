@@ -17,7 +17,11 @@ import org.springframework.stereotype.Service;
  */
 @Service
 public class InventoryServiceImpl extends ServiceImpl<InventoryMapper, Inventory> implements IInventoryService {
-
+    /**
+     * 查询商品库存
+     * @param productId 商品ID
+     * @return 库存数量
+     */
     @Override
     public Integer getStockByProductId(Long productId) {
         QueryWrapper<Inventory> queryWrapper = new QueryWrapper<>();
@@ -26,6 +30,12 @@ public class InventoryServiceImpl extends ServiceImpl<InventoryMapper, Inventory
         return inventory != null ? inventory.getStock() : 0;
     }
 
+    /**
+     * 扣库存
+     * @param productId 商品ID
+     * @param quantity  扣库存数量
+     * @return 是否成功
+     */
     @Override
     public boolean deductStock(Long productId, Integer quantity) {
         QueryWrapper<Inventory> queryWrapper = new QueryWrapper<>();
@@ -38,7 +48,12 @@ public class InventoryServiceImpl extends ServiceImpl<InventoryMapper, Inventory
         inventory.setSold(inventory.getSold() + quantity);
         return baseMapper.updateById(inventory) > 0;
     }
-
+    /**
+     * 回滚库存
+     * @param productId 商品ID
+     * @param quantity  回滚库存数量
+     * @return 是否成功
+     */
     @Override
     public boolean rollbackStock(Long productId, Integer quantity) {
         QueryWrapper<Inventory> queryWrapper = new QueryWrapper<>();
@@ -51,7 +66,11 @@ public class InventoryServiceImpl extends ServiceImpl<InventoryMapper, Inventory
         inventory.setSold(inventory.getSold() - quantity);
         return baseMapper.updateById(inventory) > 0;
     }
-
+    /**
+     * 查询商品已售数量
+     * @param productId 商品ID
+     * @return 已售数量
+     */
     @Override
     public Integer getSoldCount(Long productId) {
         QueryWrapper<Inventory> queryWrapper = new QueryWrapper<>();
@@ -59,7 +78,12 @@ public class InventoryServiceImpl extends ServiceImpl<InventoryMapper, Inventory
         Inventory inventory = baseMapper.selectOne(queryWrapper);
         return inventory != null ? inventory.getSold() : 0;
     }
-
+    /**
+     * 初始化商品库存
+     * @param productId 商品ID
+     * @param initialStock  初始库存数量
+     * @return 是否成功
+     */
     @Override
     public boolean initInventory(Long productId, Integer initialStock) {
         QueryWrapper<Inventory> queryWrapper = new QueryWrapper<>();

@@ -5,11 +5,13 @@ import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.milkteasystem.common.Result;
+import com.example.milkteasystem.dto.UserDTO;
+import com.example.milkteasystem.dto.UserCreateDTO;
+import com.example.milkteasystem.dto.UserUpdateDTO;
 import com.example.milkteasystem.entity.Orders;
 import com.example.milkteasystem.entity.User;
-import com.example.milkteasystem.service.impl.OrdersServiceImpl;
-import com.example.milkteasystem.service.impl.UserServiceImpl;
-import com.example.milkteasystem.util.AESUtil;
+import com.example.milkteasystem.service.IOrdersService;
+import com.example.milkteasystem.service.IUserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,33 +27,19 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/milkteasystem/user")
 public class UserController {
     @Autowired
-    private UserServiceImpl userService ;
+    private IUserService userService ;
     
     @Autowired
-    private OrdersServiceImpl ordersService;
-//    /**
-//     * 添加用户
-//     * @param user
-//     * @return
-//     */
-//    @PostMapping
-//    public Result save(@RequestBody User user){
-//        userService.save(user);
-//        return Result.success();
-//    }
+    private IOrdersService ordersService;
     /**
      * 添加用户
-     * @param user
-     * @return
+     * @param userCreateDTO 用户创建DTO
+     * @return 操作结果
      */
     @PostMapping
-    public Result save(@RequestBody User user){
+    public Result save(@RequestBody UserCreateDTO userCreateDTO){
         try {
-            // 手机号加密
-            if (user.getPhone() != null && !user.getPhone().isEmpty()) {
-                user.setPhone(AESUtil.encrypt(user.getPhone()));
-            }
-            userService.save(user);
+            userService.createUser(userCreateDTO);
             return Result.success();
         } catch (Exception e) {
             e.printStackTrace();
@@ -60,18 +48,19 @@ public class UserController {
     }
     /**
      * 修改用户
-     * @param user
-     * @return
+     * @param id 用户ID
+     * @param userUpdateDTO 用户更新DTO
+     * @return 操作结果
      */
-    @PutMapping
-    public Result update(@RequestBody User user){
+    @PutMapping("/{id}")
+    public Result update(@PathVariable Long id, @RequestBody UserUpdateDTO userUpdateDTO){
         try {
-            // 手机号加密
-            if (user.getPhone() != null && !user.getPhone().isEmpty()) {
-                user.setPhone(AESUtil.encrypt(user.getPhone()));
+            boolean result = userService.updateUser(id, userUpdateDTO);
+            if (result) {
+                return Result.success();
+            } else {
+                return Result.error("用户不存在");
             }
-            userService.updateById(user);
-            return Result.success();
         } catch (Exception e) {
             e.printStackTrace();
             return Result.error("更新用户信息失败");
@@ -79,20 +68,25 @@ public class UserController {
     }
     /**
      * 查询所有用户
-     * @return
+     * @return 用户列表
      */
     @GetMapping
     public Result getAll(){
-        return Result.success(userService.list());
+        return Result.success(userService.getAllUserDTOs());
     }
     /**
      * 根据id查询用户
-     * @param id
-     * @return
+     * @param id 用户ID
+     * @return 用户信息
      */
     @GetMapping("/{id}")
     public Result getoneByid(@PathVariable Long id){
-        return Result.success(userService.getById(id));
+        UserDTO userDTO = userService.getUserDTO(id);
+        if (userDTO != null) {
+            return Result.success(userDTO);
+        } else {
+            return Result.error("用户不存在");
+        }
     }
     /**
      * 删除用户
@@ -122,20 +116,33 @@ public class UserController {
 
 
     /**
-     * 登录
-     * @return
+     * 用户登录
+     * @param username 用户名
+     * @param password 密码
+     * @return 登录结果
      */
-    // 测试登录，浏览器访问： http://localhost:8080//milkteasystem/user/doLogin?username=zhang&password=123456
-    // 登录接口
+
     @RequestMapping("doLogin")
-    public Result doLogin() {
-        // 第1步，先登录上
-        StpUtil.login(10001);
-        // 第2步，获取 Token  相关参数
-        SaTokenInfo tokenInfo = StpUtil.getTokenInfo();
-        // 第3步，返回给前端
-        return Result.success(tokenInfo);
+    public Result doLogin(@RequestParam String username, @RequestParam String password) {
+        try {
+            // 1. 验证用户名和密码
+            User user = userService.login(username, password);
+            if (user == null) {
+                return Result.error("用户名或密码错误");
+            }
+
+            // 2. 登录并生成Token
+            StpUtil.login(user.getUserId());
+            SaTokenInfo tokenInfo = StpUtil.getTokenInfo();
+
+            // 3. 返回登录结果
+            return Result.success(tokenInfo);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.error("登录失败：" + e.getMessage());
+        }
     }
+
 
 
     /**
@@ -151,9 +158,7 @@ public class UserController {
             String openid = "mock_openid_" + System.currentTimeMillis();
             
             // 根据openid查询用户
-            LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
-            queryWrapper.eq(User::getOpenid, openid);
-            User user = userService.getOne(queryWrapper);
+            User user = userService.getUserByOpenid(openid);
             
             // 如果用户不存在，创建新用户
             if (user == null) {
@@ -175,27 +180,21 @@ public class UserController {
 
     /**
      * 更新微信用户信息
-     * @param user 用户信息
+     * @param userUpdateDTO 用户更新DTO
      * @return 更新结果
      */
     @PostMapping("/updateWechatInfo")
-    public Result updateWechatInfo(@RequestBody User user) {
+    public Result updateWechatInfo(@RequestBody UserUpdateDTO userUpdateDTO) {
         try {
             // 获取当前登录用户ID
             Long userId = StpUtil.getLoginIdAsLong();
             
-            // 查询用户
-            User existingUser = userService.getById(userId);
-            if (existingUser == null) {
+            boolean result = userService.updateWechatInfo(userId, userUpdateDTO.getNickname(), userUpdateDTO.getAvatar());
+            if (result) {
+                return Result.success();
+            } else {
                 return Result.error("用户不存在");
             }
-            
-            // 更新用户信息
-            existingUser.setNickname(user.getNickname());
-            existingUser.setAvatar(user.getAvatar());
-            
-            userService.updateById(existingUser);
-            return Result.success();
         } catch (Exception e) {
             e.printStackTrace();
             return Result.error("更新微信用户信息失败");
@@ -213,34 +212,21 @@ public class UserController {
 
     /**
      * 修改个人信息
-     * @param user 用户信息
+     * @param userUpdateDTO 用户更新DTO
      * @return 更新结果
      */
     @PostMapping("/updatePersonalInfo")
-    public Result updatePersonalInfo(@RequestBody User user) {
+    public Result updatePersonalInfo(@RequestBody UserUpdateDTO userUpdateDTO) {
         try {
             // 获取当前登录用户ID
             Long userId = StpUtil.getLoginIdAsLong();
             
-            // 查询用户
-            User existingUser = userService.getById(userId);
-            if (existingUser == null) {
+            boolean result = userService.updateUser(userId, userUpdateDTO);
+            if (result) {
+                return Result.success();
+            } else {
                 return Result.error("用户不存在");
             }
-            
-            // 更新用户信息
-            if (user.getPhone() != null && !user.getPhone().isEmpty()) {
-                existingUser.setPhone(AESUtil.encrypt(user.getPhone()));
-            }
-            if (user.getNickname() != null) {
-                existingUser.setNickname(user.getNickname());
-            }
-            if (user.getAvatar() != null) {
-                existingUser.setAvatar(user.getAvatar());
-            }
-            
-            userService.updateById(existingUser);
-            return Result.success();
         } catch (Exception e) {
             e.printStackTrace();
             return Result.error("更新个人信息失败");

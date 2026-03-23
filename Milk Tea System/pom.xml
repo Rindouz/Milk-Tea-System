@@ -107,7 +107,14 @@
             <artifactId>lombok</artifactId>
             <optional>true</optional>
         </dependency>
-
+        <!-- RocketMQ 依赖 -->
+        <!-- Source: https://mvnrepository.com/artifact/org.apache.rocketmq/rocketmq-spring-boot-starter -->
+        <dependency>
+            <groupId>org.apache.rocketmq</groupId>
+            <artifactId>rocketmq-spring-boot-starter</artifactId>
+            <version>2.3.5</version>
+            <scope>compile</scope>
+        </dependency>
         <!-- ==================== 测试依赖 ==================== -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -167,7 +174,7 @@
             </plugin>
         </plugins>
 
-        <!-- 【关键修改】资源文件配置：加上了 **/*.properties -->
+        <!-- 资源文件配置：加上了 **/*.properties -->
         <resources>
             <resource>
                 <directory>src/main/resources</directory>
