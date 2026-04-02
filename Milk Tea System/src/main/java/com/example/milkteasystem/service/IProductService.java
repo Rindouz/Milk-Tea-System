@@ -2,6 +2,7 @@ package com.example.milkteasystem.service;
 
 import com.example.milkteasystem.entity.Product;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import java.util.List;
 
 /**
@@ -21,6 +22,16 @@ public interface IProductService extends IService<Product> {
      * @return 商品列表
      */
     List<Product> getProductList(Long categoryId, Long storeId);
+
+    /**
+     * 分页获取商品列表（支持按分类、门店筛选）
+     * @param page 当前页码
+     * @param size 每页大小
+     * @param categoryId 分类ID
+     * @param storeId 门店ID
+     * @return 分页商品列表
+     */
+    Page<Product> getProductPage(Integer page, Integer size, Long categoryId, Long storeId);
 
     /**
      * 获取商品详情
@@ -43,5 +54,7 @@ public interface IProductService extends IService<Product> {
      * @return 库存数量
      */
     Integer getProductStock(Long productId);
+
+
 }
 

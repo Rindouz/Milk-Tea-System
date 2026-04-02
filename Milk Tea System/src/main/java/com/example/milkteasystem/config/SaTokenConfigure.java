@@ -30,12 +30,22 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
                     // 指定 拦截路由 与 放行路由
                     .addInclude("/**").addExclude("/favicon.ico")    /* 排除掉 /favicon.ico */
 
+//                    // 认证函数: 每次请求执行
+//                    .setAuth(obj -> {
+//                        System.out.println("---------- 进入Sa-Token全局认证 -----------");
+//
+//                        // 登录认证 -- 拦截所有路由，并排除/user/doLogin 用于开放登录
+//                        SaRouter.match("/**", "/user/milkteasystem/doLogin", () -> StpUtil.checkLogin());
+//
+//                        // 更多拦截处理方式，请参考“路由拦截式鉴权”章节 */
+//                    }
+//                    )
                     // 认证函数: 每次请求执行
                     .setAuth(obj -> {
                         System.out.println("---------- 进入Sa-Token全局认证 -----------");
 
-                        // 登录认证 -- 拦截所有路由，并排除/user/doLogin 用于开放登录
-                        SaRouter.match("/**", "/user/milkteasystem/doLogin", () -> StpUtil.checkLogin());
+                        // 开发所有路由，不再限制登录
+                        // 移除登录认证检查
 
                         // 更多拦截处理方式，请参考“路由拦截式鉴权”章节 */
                     })

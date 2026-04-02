@@ -1,6 +1,7 @@
 package com.example.milkteasystem.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.milkteasystem.dto.OrderCreateDTO;
 import com.example.milkteasystem.dto.OrderDetailDTO;
 import com.example.milkteasystem.dto.OrderItemDTO;
@@ -167,6 +168,18 @@ public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> impleme
         }
         queryWrapper.orderByDesc("create_time");
         return list(queryWrapper);
+    }
+
+    @Override
+    public Page<Orders> getUserOrdersPage(Integer page, Integer size, Long userId, Byte status) {
+        Page<Orders> ordersPage = new Page<>(page, size);
+        QueryWrapper<Orders> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("user_id", userId);
+        if (status != null) {
+            queryWrapper.eq("order_status", status);
+        }
+        queryWrapper.orderByDesc("create_time");
+        return baseMapper.selectPage(ordersPage, queryWrapper);
     }
 
     @Override

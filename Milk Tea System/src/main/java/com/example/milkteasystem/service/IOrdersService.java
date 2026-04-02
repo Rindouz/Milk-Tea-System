@@ -5,6 +5,7 @@ import com.example.milkteasystem.dto.OrderDetailDTO;
 import com.example.milkteasystem.entity.OrderItem;
 import com.example.milkteasystem.entity.Orders;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -31,6 +32,8 @@ public interface IOrdersService extends IService<Orders> {
     boolean confirmOrder(String orderNo);
     //查询用户订单列表
     List<Orders> getUserOrders(Long userId, Byte status);
+    //分页查询用户订单列表
+    Page<Orders> getUserOrdersPage(Integer page, Integer size, Long userId, Byte status);
     //查询订单详情
     OrderDetailDTO getOrderDetail(String orderNo);
 }

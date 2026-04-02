@@ -5,6 +5,7 @@ import com.example.milkteasystem.mapper.InventoryMapper;
 import com.example.milkteasystem.service.IInventoryService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.stereotype.Service;
 
 /**
@@ -102,5 +103,41 @@ public class InventoryServiceImpl extends ServiceImpl<InventoryMapper, Inventory
             return baseMapper.insert(inventory) > 0;
         }
     }
+    /**
+     * 增加或修改库存
+     * @param inventory 库存对象
+     * @return 新增的库存对象
+     */
+    @Override
+    public Inventory saveOrUpdateInventory(Inventory inventory) {
+        // 1. 根据商品ID productId 查询是否已有库存记录
+        QueryWrapper<Inventory> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("product_id", inventory.getProductId());
+
+        Inventory existInventory = baseMapper.selectOne(queryWrapper);
+
+        if (existInventory != null) {
+            // 2. 已存在 → 更新：把新的库存、销量设置进去，保留主键ID
+            existInventory.setStock(inventory.getStock());
+            existInventory.setSold(inventory.getSold());
+            // 时间会自动填充，不用手动 set
+            baseMapper.updateById(existInventory);
+
+            return existInventory; // 返回更新后的对象
+        } else {
+            // 3. 不存在 → 插入新增
+            baseMapper.insert(inventory);
+            return inventory; // 返回新增后的对象
+        }
+    }
+
+    @Override
+    public Page<Inventory> getInventoryPage(Integer page, Integer size) {
+        Page<Inventory> inventoryPage = new Page<>(page, size);
+        return baseMapper.selectPage(inventoryPage, null);
+    }
+
+
+
 }
 
