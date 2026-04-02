@@ -11,6 +11,7 @@ import com.example.milkteasystem.service.IStoreService;
 import com.example.milkteasystem.service.impl.OrdersServiceImpl;
 import com.example.milkteasystem.service.impl.ProductServiceImpl;
 import com.example.milkteasystem.service.impl.StoreServiceImpl;
+import com.example.milkteasystem.util.RedisUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -31,6 +32,11 @@ public class StoreController {
     private OrdersServiceImpl ordersService;
     @Autowired
     private ProductServiceImpl productService;
+    @Autowired
+    private RedisUtil redisUtil;
+
+    private static final String STORE_DETAIL_KEY_PREFIX = "store:detail:";
+    private static final String STORE_WAITING_ORDERS_KEY_PREFIX = "store:waiting:orders:";
 
     //- 门店列表查询
 //- 门店详情查询
@@ -63,11 +69,21 @@ public class StoreController {
     //门店详情查询
     @GetMapping("/{id}")
     public Result getStoreById(@PathVariable Long id) {
+        String key = STORE_DETAIL_KEY_PREFIX + id;
+        // 尝试从缓存获取
+        Store store = (Store) redisUtil.get(key);
+        if (store != null) {
+            return Result.success(store);
+        }
+        // 缓存未命中，从数据库获取
         Result checkResult = checkStoreExist(id);
         if (checkResult != null) {
             return checkResult;
         }
-        return Result.success(storeService.getById(id));
+        store = storeService.getById(id);
+        // 存入缓存，设置过期时间为1小时
+        redisUtil.set(key, store, 3600);
+        return Result.success(store);
     }
 
     //门店订单查询
@@ -84,10 +100,19 @@ public class StoreController {
     //调用orders-status=3的字段
     @GetMapping("/{id}/orders/Waiting")
     public Result getWaiting(@PathVariable Long id) {
+        String key = STORE_WAITING_ORDERS_KEY_PREFIX + id;
+        // 尝试从缓存获取
+        Long count = (Long) redisUtil.get(key);
+        if (count != null) {
+            return Result.success(count);
+        }
+        // 缓存未命中，从数据库获取
         LambdaQueryWrapper<Orders> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(Orders::getStoreId, id);
         queryWrapper.eq(Orders::getOrderStatus, 3);
-        long count = ordersService.count(queryWrapper);
+        count = ordersService.count(queryWrapper);
+        // 存入缓存，设置过期时间为1分钟
+        redisUtil.set(key, count, 60);
         return Result.success(count);
     }
 
@@ -99,7 +124,12 @@ public class StoreController {
 
     @PutMapping
     public Result update(@RequestBody Store store) {
-        return Result.success(storeService.updateById(store));
+        boolean result = storeService.updateById(store);
+        if (result) {
+            // 清除门店详情缓存
+            redisUtil.delete(STORE_DETAIL_KEY_PREFIX + store.getStoreId());
+        }
+        return Result.success(result);
     }
 
     @DeleteMapping("/{id}")
@@ -108,7 +138,14 @@ public class StoreController {
         if (checkResult != null) {
             return checkResult;
         }
-        return Result.success(storeService.removeById(id));
+        boolean result = storeService.removeById(id);
+        if (result) {
+            // 清除门店详情缓存
+            redisUtil.delete(STORE_DETAIL_KEY_PREFIX + id);
+            // 清除门店等待订单缓存
+            redisUtil.delete(STORE_WAITING_ORDERS_KEY_PREFIX + id);
+        }
+        return Result.success(result);
     }
 
     @GetMapping("/page")
@@ -131,7 +168,11 @@ public class StoreController {
         }
         Store store = storeService.getById(id);
         store.setStatus(status);
-        storeService.saveOrUpdate(store);
+        boolean result = storeService.saveOrUpdate(store);
+        if (result) {
+            // 清除门店详情缓存
+            redisUtil.delete(STORE_DETAIL_KEY_PREFIX + id);
+        }
         return Result.success();
     }
 

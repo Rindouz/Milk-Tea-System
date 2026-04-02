@@ -24,17 +24,22 @@ public class Time implements MetaObjectHandler {
                 LocalDateTime.class,
                 LocalDateTime.now()
         );
+        this.strictInsertFill(
+                metaObject,
+                "updateTime",
+                LocalDateTime.class,
+                LocalDateTime.now()
+        );
     }
 
     // 更新操作时自动填充（如果有updateTime字段可以用）
     @Override
     public void updateFill(MetaObject metaObject) {
-        // 如需更新时间自动填充，取消下面注释
-        // this.strictUpdateFill(
-        //     metaObject,
-        //     "updateTime",
-        //     LocalDateTime.class,
-        //     LocalDateTime.now()
-        // );
+         this.strictUpdateFill(
+             metaObject,
+             "updateTime",
+             LocalDateTime.class,
+             LocalDateTime.now()
+         );
     }
 }

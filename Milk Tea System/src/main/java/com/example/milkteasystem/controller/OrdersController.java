@@ -5,6 +5,11 @@ import com.example.milkteasystem.dto.OrderDetailDTO;
 import com.example.milkteasystem.entity.Orders;
 import com.example.milkteasystem.service.IOrdersService;
 import com.example.milkteasystem.common.Result;
+import com.example.milkteasystem.message.OrderCreateMessage;
+import com.example.milkteasystem.message.OrderStatusUpdateMessage;
+import com.example.milkteasystem.message.OrderCancelMessage;
+import com.example.milkteasystem.producer.OrderMessageProducer;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
@@ -24,44 +29,54 @@ public class OrdersController {
     @Autowired
     private IOrdersService ordersService;
 
+    @Autowired
+    private OrderMessageProducer orderMessageProducer;
+
     // 创建订单
     @PostMapping("/create")
     public Result createOrder(@RequestBody OrderCreateDTO orderCreateDTO) {
-        Orders order = ordersService.createOrder(orderCreateDTO);
-        return Result.success(order);
+        // 发送订单创建消息，异步处理
+        OrderCreateMessage message = new OrderCreateMessage();
+        message.setOrderCreateDTO(orderCreateDTO);
+        message.setTimestamp(System.currentTimeMillis());
+        orderMessageProducer.sendOrderCreateMessage(message);
+        return Result.success("订单创建请求已提交，正在处理");
     }
 
     // 订单支付
     @PostMapping("/pay/{orderNo}")
     public Result payOrder(@PathVariable String orderNo) {
-        boolean result = ordersService.payOrder(orderNo);
-        if (result) {
-            return Result.success("支付成功");
-        } else {
-            return Result.error("支付失败");
-        }
+        // 发送订单状态更新消息，异步处理
+        OrderStatusUpdateMessage message = new OrderStatusUpdateMessage();
+        message.setOrderNo(orderNo);
+        message.setOrderStatus((byte) 1); // 支付成功
+        message.setTimestamp(System.currentTimeMillis());
+        orderMessageProducer.sendOrderStatusUpdateMessage(message);
+        return Result.success("支付请求已提交，正在处理");
     }
 
     // 取消订单
     @PostMapping("/cancel/{orderNo}")
     public Result cancelOrder(@PathVariable String orderNo) {
-        boolean result = ordersService.cancelOrder(orderNo);
-        if (result) {
-            return Result.success("取消成功");
-        } else {
-            return Result.error("取消失败");
-        }
+        // 发送订单取消消息，异步处理
+        OrderCancelMessage message = new OrderCancelMessage();
+        message.setOrderNo(orderNo);
+        message.setCancelReason("用户主动取消");
+        message.setTimestamp(System.currentTimeMillis());
+        orderMessageProducer.sendOrderCancelMessage(message);
+        return Result.success("取消请求已提交，正在处理");
     }
 
     // 确认取餐
     @PostMapping("/confirm/{orderNo}")
     public Result confirmOrder(@PathVariable String orderNo) {
-        boolean result = ordersService.confirmOrder(orderNo);
-        if (result) {
-            return Result.success("取餐成功");
-        } else {
-            return Result.error("取餐失败");
-        }
+        // 发送订单状态更新消息，异步处理
+        OrderStatusUpdateMessage message = new OrderStatusUpdateMessage();
+        message.setOrderNo(orderNo);
+        message.setOrderStatus((byte) 2); // 订单完成
+        message.setTimestamp(System.currentTimeMillis());
+        orderMessageProducer.sendOrderStatusUpdateMessage(message);
+        return Result.success("取餐请求已提交，正在处理");
     }
 
     // 查询用户订单列表
@@ -69,6 +84,12 @@ public class OrdersController {
     public Result getUserOrders(@PathVariable Long userId, @RequestParam(required = false) Byte status) {
         List<Orders> orders = ordersService.getUserOrders(userId, status);
         return Result.success(orders);
+    }
+    // 分页查询用户订单列表
+    @GetMapping("/user/page/{userId}")
+    public Result getUserOrdersPage(@PathVariable Long userId, @RequestParam(defaultValue = "1") Integer page, @RequestParam(defaultValue = "10") Integer size, @RequestParam(required = false) Byte status) {
+        Page<Orders> ordersPage = ordersService.getUserOrdersPage(page, size, userId, status);
+        return Result.success(ordersPage);
     }
 
     // 查询订单详情

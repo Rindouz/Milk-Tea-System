@@ -6,6 +6,7 @@ import com.example.milkteasystem.service.IProductService;
 import com.example.milkteasystem.service.IInventoryService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.util.List;
@@ -36,6 +37,21 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         // 只查询上架状态的商品
         queryWrapper.eq("status", 1);
         return baseMapper.selectList(queryWrapper);
+    }
+
+    @Override
+    public Page<Product> getProductPage(Integer page, Integer size, Long categoryId, Long storeId) {
+        Page<Product> productPage = new Page<>(page, size);
+        QueryWrapper<Product> queryWrapper = new QueryWrapper<>();
+        if (categoryId != null) {
+            queryWrapper.eq("category_id", categoryId);
+        }
+        if (storeId != null) {
+            queryWrapper.eq("store_id", storeId);
+        }
+        // 只查询上架状态的商品
+        queryWrapper.eq("status", 1);
+        return baseMapper.selectPage(productPage, queryWrapper);
     }
 
     @Override

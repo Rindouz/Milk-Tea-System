@@ -2,6 +2,7 @@ package com.example.milkteasystem.service;
 
 import com.example.milkteasystem.entity.Inventory;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 
 /**
  * <p>
@@ -50,5 +51,22 @@ public interface IInventoryService extends IService<Inventory> {
      * @return 操作结果
      */
     boolean initInventory(Long productId, Integer initialStock);
+
+    /**
+     * 增加或修改库存
+     * @param inventory 库存对象
+     * @return 新增的库存对象
+     */
+    Inventory saveOrUpdateInventory(Inventory inventory);
+
+    /**
+     * 分页获取库存列表
+     * @param page 当前页码
+     * @param size 每页大小
+     * @return 分页库存列表
+     */
+    Page<Inventory> getInventoryPage(Integer page, Integer size);
+
+
 }
 

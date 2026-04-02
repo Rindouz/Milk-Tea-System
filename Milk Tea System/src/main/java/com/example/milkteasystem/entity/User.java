@@ -36,6 +36,8 @@ public class User implements Serializable {
      */
     private String openid;
 
+
+
     /**
      * 用户昵称
      */
