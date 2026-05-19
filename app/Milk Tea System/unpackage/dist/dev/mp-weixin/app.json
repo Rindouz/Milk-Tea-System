@@ -1,0 +1,56 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/menu/index",
+    "pages/product/detail",
+    "pages/cart/index",
+    "pages/order/create",
+    "pages/order/list",
+    "pages/user/index"
+  ],
+  "window": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "奶茶点点",
+    "navigationBarBackgroundColor": "#ffffff",
+    "backgroundColor": "#f5f5f5"
+  },
+  "tabBar": {
+    "color": "#999999",
+    "selectedColor": "#d4a574",
+    "borderStyle": "black",
+    "backgroundColor": "#ffffff",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "首页",
+        "iconPath": "static/logo.png",
+        "selectedIconPath": "static/logo.png"
+      },
+      {
+        "pagePath": "pages/menu/index",
+        "text": "菜单",
+        "iconPath": "static/logo.png",
+        "selectedIconPath": "static/logo.png"
+      },
+      {
+        "pagePath": "pages/cart/index",
+        "text": "购物车",
+        "iconPath": "static/logo.png",
+        "selectedIconPath": "static/logo.png"
+      },
+      {
+        "pagePath": "pages/order/list",
+        "text": "订单",
+        "iconPath": "static/logo.png",
+        "selectedIconPath": "static/logo.png"
+      },
+      {
+        "pagePath": "pages/user/index",
+        "text": "我的",
+        "iconPath": "static/logo.png",
+        "selectedIconPath": "static/logo.png"
+      }
+    ]
+  },
+  "usingComponents": {}
+}

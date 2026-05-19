@@ -30,11 +30,16 @@ public interface IOrdersService extends IService<Orders> {
     boolean cancelOrder(String orderNo);
     //确认取餐
     boolean confirmOrder(String orderNo);
+    //制作订单
+    boolean makeOrder(String orderNo);
+
     //查询用户订单列表
     List<Orders> getUserOrders(Long userId, Byte status);
     //分页查询用户订单列表
     Page<Orders> getUserOrdersPage(Integer page, Integer size, Long userId, Byte status);
     //查询订单详情
     OrderDetailDTO getOrderDetail(String orderNo);
+    //更新订单状态
+    int updateOrderStatus(String orderNo, Byte status);
 }
 

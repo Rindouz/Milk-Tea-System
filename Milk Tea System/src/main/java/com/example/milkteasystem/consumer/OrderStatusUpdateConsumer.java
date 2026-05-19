@@ -27,9 +27,13 @@ public class OrderStatusUpdateConsumer implements RocketMQListener<OrderStatusUp
                     break;
                 case 2: // 订单完成
                     // 可以添加订单完成后的处理逻辑
+                    ordersService.confirmOrder(message.getOrderNo());
                     break;
-                case 3: // 订单取消
+                case 4: // 订单取消
                     ordersService.cancelOrder(message.getOrderNo());
+                    break;
+                case 3: // 制作中
+                    ordersService.makeOrder(message.getOrderNo());
                     break;
                 default:
                     break;

@@ -1,0 +1,8 @@
+{
+  "name": "milk-tea-miniapp",
+  "version": "1.0.0",
+  "description": "奶茶点点小程序",
+  "dependencies": {
+    "pinia": "^2.1.7"
+  }
+}

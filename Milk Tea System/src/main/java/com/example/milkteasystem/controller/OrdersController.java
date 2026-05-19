@@ -79,13 +79,13 @@ public class OrdersController {
         return Result.success("取餐请求已提交，正在处理");
     }
 
-    // 查询用户订单列表
+    // 查询订单列表
     @GetMapping("/user/{userId}")
     public Result getUserOrders(@PathVariable Long userId, @RequestParam(required = false) Byte status) {
         List<Orders> orders = ordersService.getUserOrders(userId, status);
         return Result.success(orders);
     }
-    // 分页查询用户订单列表
+    // 分页查询订单列表
     @GetMapping("/user/page/{userId}")
     public Result getUserOrdersPage(@PathVariable Long userId, @RequestParam(defaultValue = "1") Integer page, @RequestParam(defaultValue = "10") Integer size, @RequestParam(required = false) Byte status) {
         Page<Orders> ordersPage = ordersService.getUserOrdersPage(page, size, userId, status);
@@ -97,6 +97,21 @@ public class OrdersController {
     public Result getOrderDetail(@PathVariable String orderNo) {
         OrderDetailDTO orderDetail = ordersService.getOrderDetail(orderNo);
         return Result.success(orderDetail);
+    }
+
+    // 更新订单状态
+    @PostMapping("/updateStatus/{orderNo}")
+    public Result updateOrderStatus(@PathVariable String orderNo, @RequestParam Byte status) {
+        //修改订单状态
+        ordersService.updateOrderStatus(orderNo, status);
+        // 发送订单状态更新消息，异步处理
+        OrderStatusUpdateMessage message = new OrderStatusUpdateMessage();
+        message.setOrderNo(orderNo);
+        message.setOrderStatus(status);
+        message.setTimestamp(System.currentTimeMillis());
+        orderMessageProducer.sendOrderStatusUpdateMessage(message);
+        return Result.success("状态更新请求已提交，正在处理");
+
     }
 
 }

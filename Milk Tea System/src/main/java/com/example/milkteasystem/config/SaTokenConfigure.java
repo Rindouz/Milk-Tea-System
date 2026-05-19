@@ -3,7 +3,9 @@ package com.example.milkteasystem.config;
 
 import cn.dev33.satoken.context.SaHolder;
 import cn.dev33.satoken.filter.SaServletFilter;
+import cn.dev33.satoken.fun.strategy.SaCorsHandleFunction;
 import cn.dev33.satoken.interceptor.SaInterceptor;
+import cn.dev33.satoken.router.SaHttpMethod;
 import cn.dev33.satoken.router.SaRouter;
 import cn.dev33.satoken.stp.StpUtil;
 import cn.dev33.satoken.util.SaResult;
@@ -21,6 +23,23 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
     public class SaTokenConfigure implements WebMvcConfigurer {
 
         /**
+         * CORS 跨域处理策略
+         */
+        @Bean
+        public SaCorsHandleFunction corsHandle() {
+            return (req, res, sto) -> {
+                res.setHeader("Access-Control-Allow-Origin", "*")
+                        .setHeader("Access-Control-Allow-Methods", "POST, GET, PUT, OPTIONS, DELETE")
+                        .setHeader("Access-Control-Max-Age", "3600")
+                        .setHeader("Access-Control-Allow-Headers", "*");
+
+                SaRouter.match(SaHttpMethod.OPTIONS)
+                        .free(r -> System.out.println("--------OPTIONS预检请求，不做处理"))
+                        .back();
+            };
+        }
+
+        /**
          * 注册 [Sa-Token全局过滤器]
          */
         @Bean
@@ -28,26 +47,16 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
             return new SaServletFilter()
 
                     // 指定 拦截路由 与 放行路由
-                    .addInclude("/**").addExclude("/favicon.ico")    /* 排除掉 /favicon.ico */
+                    .addInclude("/**")
+                    .addExclude("/favicon.ico", "/doc.html", "/v3/api-docs/**", "/swagger-resources/**", "/webjars/**")
 
-//                    // 认证函数: 每次请求执行
-//                    .setAuth(obj -> {
-//                        System.out.println("---------- 进入Sa-Token全局认证 -----------");
-//
-//                        // 登录认证 -- 拦截所有路由，并排除/user/doLogin 用于开放登录
-//                        SaRouter.match("/**", "/user/milkteasystem/doLogin", () -> StpUtil.checkLogin());
-//
-//                        // 更多拦截处理方式，请参考“路由拦截式鉴权”章节 */
-//                    }
-//                    )
                     // 认证函数: 每次请求执行
                     .setAuth(obj -> {
-                        System.out.println("---------- 进入Sa-Token全局认证 -----------");
-
-                        // 开发所有路由，不再限制登录
-                        // 移除登录认证检查
-
-                        // 更多拦截处理方式，请参考“路由拦截式鉴权”章节 */
+                        // 登录认证 -- 拦截所有路由，排除登录接口
+                        SaRouter.match("/**")
+                                .notMatch("/milkteasystem/user/doLogin")
+                                .notMatch("/milkteasystem/user/wechatLogin")
+                                .check(r -> StpUtil.checkLogin());
                     })
 
                     // 异常处理函数：每次认证函数发生异常时执行此函数

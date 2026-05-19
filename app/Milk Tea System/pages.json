@@ -1,17 +1,76 @@
 {
-	"pages": [{
-		"path": "pages/index/index",
-		"style": {
-			"navigationBarTitleText": "uni-app"
+	"pages": [
+		{
+			"path": "pages/index/index",
+			"style": { "navigationBarTitleText": "奶茶点点" }
+		},
+		{
+			"path": "pages/menu/index",
+			"style": { "navigationBarTitleText": "菜单" }
+		},
+		{
+			"path": "pages/product/detail",
+			"style": { "navigationBarTitleText": "商品详情" }
+		},
+		{
+			"path": "pages/cart/index",
+			"style": { "navigationBarTitleText": "购物车" }
+		},
+		{
+			"path": "pages/order/create",
+			"style": { "navigationBarTitleText": "确认下单" }
+		},
+		{
+			"path": "pages/order/list",
+			"style": { "navigationBarTitleText": "我的订单" }
+		},
+		{
+			"path": "pages/user/index",
+			"style": { "navigationBarTitleText": "个人中心" }
 		}
-	}],
+	],
+	"tabBar": {
+		"color": "#999999",
+		"selectedColor": "#d4a574",
+		"borderStyle": "black",
+		"backgroundColor": "#ffffff",
+		"list": [
+			{
+				"pagePath": "pages/index/index",
+				"text": "首页",
+				"iconPath": "static/logo.png",
+				"selectedIconPath": "static/logo.png"
+			},
+			{
+				"pagePath": "pages/menu/index",
+				"text": "菜单",
+				"iconPath": "static/logo.png",
+				"selectedIconPath": "static/logo.png"
+			},
+			{
+				"pagePath": "pages/cart/index",
+				"text": "购物车",
+				"iconPath": "static/logo.png",
+				"selectedIconPath": "static/logo.png"
+			},
+			{
+				"pagePath": "pages/order/list",
+				"text": "订单",
+				"iconPath": "static/logo.png",
+				"selectedIconPath": "static/logo.png"
+			},
+			{
+				"pagePath": "pages/user/index",
+				"text": "我的",
+				"iconPath": "static/logo.png",
+				"selectedIconPath": "static/logo.png"
+			}
+		]
+	},
 	"globalStyle": {
 		"navigationBarTextStyle": "black",
-		"navigationBarTitleText": "uni-app",
-		"navigationBarBackgroundColor": "#F8F8F8",
-		"backgroundColor": "#F8F8F8",
-		"app-plus": {
-			"background": "#efeff4"
-		}
+		"navigationBarTitleText": "奶茶点点",
+		"navigationBarBackgroundColor": "#ffffff",
+		"backgroundColor": "#f5f5f5"
 	}
 }

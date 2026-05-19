@@ -1,6 +1,7 @@
 package com.example.milkteasystem.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.milkteasystem.dto.OrderCreateDTO;
 import com.example.milkteasystem.dto.OrderDetailDTO;
@@ -21,10 +22,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 /**
@@ -49,12 +48,9 @@ public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> impleme
     @Autowired
     private OrderMessageProducer orderMessageProducer;
 
-    // 生成唯一订单号
+    // 生成唯一订单号（雪花算法）
     private String generateOrderNo() {
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
-        String dateStr = sdf.format(new Date());
-        String randomStr = String.valueOf((int) (Math.random() * 10000));
-        return dateStr + randomStr;
+        return String.valueOf(IdWorker.getId());
     }
     // 根据订单号查询订单
     private Orders getByOrderNo(String orderNo) {
@@ -132,7 +128,11 @@ public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> impleme
     @Transactional
     public boolean cancelOrder(String orderNo) {
         Orders order = getByOrderNo(orderNo);
-        if (order == null || order.getOrderStatus() != 0) {
+        if (order == null) {
+            return false;
+        }
+        byte status = order.getOrderStatus();
+        if (status != 0 && status != 1 && status != 3) {
             return false;
         }
 
@@ -143,7 +143,7 @@ public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> impleme
             inventoryService.rollbackStock(item.getProductId(), item.getQuantity());
         }
 
-        order.setOrderStatus((byte) 3);
+        order.setOrderStatus((byte) 4);
         return updateById(order);
     }
 
@@ -151,11 +151,27 @@ public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> impleme
     @Transactional
     public boolean confirmOrder(String orderNo) {
         Orders order = getByOrderNo(orderNo);
+        if (order == null) {
+            return false;
+        }
+        byte status = order.getOrderStatus();
+        if (status != 1 && status != 3) {
+            return false;
+        }
+        order.setOrderStatus((byte) 2);
+        return updateById(order);
+    }
+
+
+    @Override
+    @Transactional
+    //制作订单
+    public boolean makeOrder(String orderNo) {
+        Orders order = getByOrderNo(orderNo);
         if (order == null || order.getOrderStatus() != 1) {
             return false;
         }
-
-        order.setOrderStatus((byte) 2);
+        order.setOrderStatus((byte) 3);
         return updateById(order);
     }
 
@@ -198,5 +214,31 @@ public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> impleme
         orderDetailDTO.setOrderItems(orderItems);
         
         return orderDetailDTO;
+    }
+
+    @Override
+    public int updateOrderStatus(String orderNo, Byte status) {
+        Orders order = getByOrderNo(orderNo);
+        if (order == null) {
+            return 0;
+        }
+        boolean success = false;
+        switch (status) {
+            case 1: // 待取餐（支付成功）
+                success = payOrder(orderNo);
+                break;
+            case 2: // 已完成（确认取餐）
+                success = confirmOrder(orderNo);
+                break;
+            case 4: // 已取消
+                success = cancelOrder(orderNo);
+                break;
+            case 3: // 正在制作制作
+                success = makeOrder(orderNo);
+                break;
+            default:
+                throw new IllegalArgumentException("不支持的订单状态: " + status);
+        }
+        return success ? 1 : 0;
     }
 }

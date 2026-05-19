@@ -32,40 +32,24 @@ public class InventoryServiceImpl extends ServiceImpl<InventoryMapper, Inventory
     }
 
     /**
-     * 扣库存
+     * 扣库存（原子操作，防止并发超卖）
      * @param productId 商品ID
      * @param quantity  扣库存数量
      * @return 是否成功
      */
     @Override
     public boolean deductStock(Long productId, Integer quantity) {
-        QueryWrapper<Inventory> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("product_id", productId);
-        Inventory inventory = baseMapper.selectOne(queryWrapper);
-        if (inventory == null || inventory.getStock() < quantity) {
-            return false;
-        }
-        inventory.setStock(inventory.getStock() - quantity);
-        inventory.setSold(inventory.getSold() + quantity);
-        return baseMapper.updateById(inventory) > 0;
+        return baseMapper.deductStockAtomic(productId, quantity) > 0;
     }
     /**
-     * 回滚库存
+     * 回滚库存（原子操作）
      * @param productId 商品ID
      * @param quantity  回滚库存数量
      * @return 是否成功
      */
     @Override
     public boolean rollbackStock(Long productId, Integer quantity) {
-        QueryWrapper<Inventory> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("product_id", productId);
-        Inventory inventory = baseMapper.selectOne(queryWrapper);
-        if (inventory == null) {
-            return false;
-        }
-        inventory.setStock(inventory.getStock() + quantity);
-        inventory.setSold(inventory.getSold() - quantity);
-        return baseMapper.updateById(inventory) > 0;
+        return baseMapper.rollbackStockAtomic(productId, quantity) > 0;
     }
     /**
      * 查询商品已售数量
