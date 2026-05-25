@@ -28,6 +28,7 @@ const _sfc_main = {
           selectStore(storeList.value[0]);
         }
       } catch (e) {
+        common_vendor.index.showToast({ title: "加载失败，请检查网络", icon: "none" });
       }
     });
     const openStorePicker = () => {

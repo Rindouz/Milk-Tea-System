@@ -1,18 +1,26 @@
 "use strict";
 const common_vendor = require("../../common/vendor.js");
 const store_cart = require("../../store/cart.js");
+const store_auth = require("../../store/auth.js");
 const api_index = require("../../api/index.js");
 const defaultImg = "/static/logo.png";
 const _sfc_main = {
   __name: "create",
   setup(__props) {
     const cartStore = store_cart.useCartStore();
+    const authStore = store_auth.useAuthStore();
     const submitting = common_vendor.ref(false);
     const storeName = common_vendor.ref(common_vendor.index.getStorageSync("storeName") || "未知");
     const form = common_vendor.reactive({
       takeName: "",
       takePhone: "",
       remark: ""
+    });
+    common_vendor.onMounted(() => {
+      if (authStore.isLogin) {
+        form.takeName = authStore.nickname !== "未登录" ? authStore.nickname : "";
+        form.takePhone = authStore.phone || "";
+      }
     });
     const submitOrder = async () => {
       if (!form.takeName.trim()) {
@@ -33,7 +41,7 @@ const _sfc_main = {
           quantity: item.quantity
         }));
         await api_index.orderApi.create({
-          userId: common_vendor.index.getStorageSync("userId") || 1,
+          userId: authStore.userId,
           storeId: common_vendor.index.getStorageSync("storeId"),
           takeName: form.takeName,
           takePhone: form.takePhone,
@@ -64,15 +72,15 @@ const _sfc_main = {
           };
         }),
         b: form.takeName,
-        c: common_vendor.o(($event) => form.takeName = $event.detail.value, "ae"),
+        c: common_vendor.o(($event) => form.takeName = $event.detail.value, "d4"),
         d: form.takePhone,
-        e: common_vendor.o(($event) => form.takePhone = $event.detail.value, "6b"),
+        e: common_vendor.o(($event) => form.takePhone = $event.detail.value, "7c"),
         f: storeName.value,
         g: form.remark,
-        h: common_vendor.o(($event) => form.remark = $event.detail.value, "10"),
+        h: common_vendor.o(($event) => form.remark = $event.detail.value, "bc"),
         i: common_vendor.t(common_vendor.unref(cartStore).totalPrice.toFixed(2)),
         j: submitting.value,
-        k: common_vendor.o(submitOrder, "60")
+        k: common_vendor.o(submitOrder, "7d")
       };
     };
   }

@@ -52,10 +52,18 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
                     // 认证函数: 每次请求执行
                     .setAuth(obj -> {
-                        // 登录认证 -- 拦截所有路由，排除登录接口
+                        // 登录认证 -- 拦截所有路由，排除登录接口和公开GET接口
                         SaRouter.match("/**")
                                 .notMatch("/milkteasystem/user/doLogin")
                                 .notMatch("/milkteasystem/user/wechatLogin")
+                                .notMatch("/milkteasystem/category/**")
+                                .notMatch("/milkteasystem/product/list")
+                                .notMatch("/milkteasystem/product/all")
+                                .notMatch("/milkteasystem/product/detail/**")
+                                .notMatch("/milkteasystem/product/stock/**")
+                                .notMatch("/milkteasystem/store")
+                                .notMatch("/milkteasystem/store/**")
+                                .notMatch("/milkteasystem/inventory/stock/**")
                                 .check(r -> StpUtil.checkLogin());
                     })
 

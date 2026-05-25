@@ -6,5 +6,6 @@ import lombok.Data;
 public class UserUpdateDTO {
     private String nickname;
     private String avatar;
-    private String phone; // 明文手机号
+    private String phone;
+    private Integer status;
 }

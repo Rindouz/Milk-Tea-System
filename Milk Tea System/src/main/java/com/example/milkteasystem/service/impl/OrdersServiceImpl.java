@@ -159,6 +159,7 @@ public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> impleme
             return false;
         }
         order.setOrderStatus((byte) 2);
+        order.setCompleteTime(LocalDateTime.now());
         return updateById(order);
     }
 
@@ -199,6 +200,20 @@ public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> impleme
     }
 
     @Override
+    public Page<Orders> getAllOrdersPage(Integer page, Integer size, Byte status, Long storeId) {
+        Page<Orders> ordersPage = new Page<>(page, size);
+        QueryWrapper<Orders> queryWrapper = new QueryWrapper<>();
+        if (status != null) {
+            queryWrapper.eq("order_status", status);
+        }
+        if (storeId != null) {
+            queryWrapper.eq("store_id", storeId);
+        }
+        queryWrapper.orderByDesc("create_time");
+        return baseMapper.selectPage(ordersPage, queryWrapper);
+    }
+
+    @Override
     public OrderDetailDTO getOrderDetail(String orderNo) {
         Orders order = getByOrderNo(orderNo);
         if (order == null) {
@@ -222,23 +237,14 @@ public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> impleme
         if (order == null) {
             return 0;
         }
-        boolean success = false;
-        switch (status) {
-            case 1: // 待取餐（支付成功）
-                success = payOrder(orderNo);
-                break;
-            case 2: // 已完成（确认取餐）
-                success = confirmOrder(orderNo);
-                break;
-            case 4: // 已取消
-                success = cancelOrder(orderNo);
-                break;
-            case 3: // 正在制作制作
-                success = makeOrder(orderNo);
-                break;
-            default:
-                throw new IllegalArgumentException("不支持的订单状态: " + status);
+        // 管理员直接更新状态，不受工作流校验限制
+        order.setOrderStatus(status);
+        if (status == 1 && order.getPayTime() == null) {
+            order.setPayTime(LocalDateTime.now());
         }
-        return success ? 1 : 0;
+        if (status == 2 && order.getCompleteTime() == null) {
+            order.setCompleteTime(LocalDateTime.now());
+        }
+        return updateById(order) ? 1 : 0;
     }
 }

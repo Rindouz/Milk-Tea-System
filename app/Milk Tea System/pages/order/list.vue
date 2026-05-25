@@ -28,6 +28,7 @@
 					<text>创建时间：{{ order.createTime }}</text>
 				</view>
 				<view class="order-actions" v-if="order.orderStatus === 0">
+					<button class="action-btn pay-btn" @click.stop="payOrder(order.orderNo)">去支付</button>
 					<button class="action-btn cancel-btn" @click.stop="cancelOrder(order.orderNo)">取消订单</button>
 				</view>
 			</view>
@@ -38,6 +39,9 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { orderApi } from '@/api/index'
+import { useAuthStore } from '@/store/auth'
+
+const authStore = useAuthStore()
 
 const statusTabs = [
 	{ label: '全部', value: null },
@@ -70,7 +74,11 @@ const selectStatus = (value) => {
 const loadOrders = async () => {
 	loading.value = true
 	try {
-		const userId = uni.getStorageSync('userId') || 1
+		const userId = authStore.userId
+		if (!userId) {
+			orderList.value = []
+			return
+		}
 		const res = await orderApi.list(userId, activeStatus.value)
 		orderList.value = res.data || []
 	} catch (e) {
@@ -116,6 +124,16 @@ const cancelOrder = async (orderNo) => {
 	}
 }
 
+const payOrder = async (orderNo) => {
+	try {
+		await orderApi.pay(orderNo)
+		uni.showToast({ title: '支付成功', icon: 'success' })
+		loadOrders()
+	} catch (e) {
+		uni.showToast({ title: '支付失败', icon: 'none' })
+	}
+}
+
 onMounted(() => {
 	loadOrders()
 })
@@ -145,5 +163,6 @@ onMounted(() => {
 .order-body text { display: block; margin-top: 2px; }
 .order-actions { margin-top: 10px; display: flex; justify-content: flex-end; }
 .action-btn { font-size: 12px; padding: 4px 16px; border-radius: 14px; height: 30px; line-height: 30px; }
+.pay-btn { background: #d4a574; color: #fff; border: none; }
 .cancel-btn { background: #f5f5f5; color: #e74c3c; border: 1px solid #ddd; }
 </style>

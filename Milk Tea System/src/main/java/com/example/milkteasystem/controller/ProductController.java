@@ -8,7 +8,11 @@ import com.example.milkteasystem.util.RedisUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import java.io.File;
+import java.io.IOException;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * <p>
@@ -123,9 +127,9 @@ public class ProductController {
         System.out.println("保存后商品ID: " + product.getProductId()); // 添加日志
 
         if (result && product.getProductId() != null) {
-            // 初始化商品库存
-            boolean inventoryResult = inventoryService.initInventory(product.getProductId(), 0);
-            System.out.println("库存初始化结果: " + inventoryResult); // 添加日志
+            Integer initialStock = (product.getStock() != null) ? product.getStock() : 0;
+            boolean inventoryResult = inventoryService.initInventory(product.getProductId(), initialStock);
+            System.out.println("库存初始化结果: " + inventoryResult + ", 初始库存: " + initialStock);
             // 清除商品列表缓存
             clearProductListCache();
         }
@@ -203,6 +207,38 @@ public class ProductController {
         // 存入缓存，设置过期时间为5分钟
         redisUtil.set(key, stock, 300);
         return Result.success(stock);
+    }
+
+    /**
+     * 上传商品图片
+     * @param file 图片文件
+     * @return 图片URL
+     */
+    @PostMapping("/uploadImage")
+    public Result uploadImage(@RequestParam("file") MultipartFile file) {
+        if (file.isEmpty()) {
+            return Result.error("上传文件不能为空");
+        }
+        try {
+            String originalFilename = file.getOriginalFilename();
+            String suffix = "";
+            if (originalFilename != null && originalFilename.contains(".")) {
+                suffix = originalFilename.substring(originalFilename.lastIndexOf("."));
+            }
+            String newFilename = UUID.randomUUID().toString() + suffix;
+            String uploadDir = System.getProperty("user.dir") + "/uploads/";
+            File dir = new File(uploadDir);
+            if (!dir.exists()) {
+                dir.mkdirs();
+            }
+            File dest = new File(uploadDir + newFilename);
+            file.transferTo(dest);
+            String imageUrl = "/uploads/" + newFilename;
+            return Result.success(imageUrl);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return Result.error("图片上传失败");
+        }
     }
 
     /**

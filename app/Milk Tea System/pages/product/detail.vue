@@ -69,7 +69,6 @@ const increaseQty = () => { quantity.value++ }
 const addToCart = () => {
 	cartStore.addItem(product.value, quantity.value)
 	uni.showToast({ title: '已加入购物车', icon: 'success', duration: 1500 })
-	setTimeout(() => { uni.switchTab({ url: '/pages/cart/index' }) }, 1200)
 }
 </script>
 

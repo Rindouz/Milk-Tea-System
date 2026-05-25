@@ -19,5 +19,6 @@ public class OrderDetailDTO {
     private String takePhone;
     private LocalDateTime createTime;
     private LocalDateTime payTime;
+    private LocalDateTime completeTime;
     private List<OrderItem> orderItems;
 }

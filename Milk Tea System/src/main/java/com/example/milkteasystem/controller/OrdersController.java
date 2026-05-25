@@ -70,13 +70,23 @@ public class OrdersController {
     // 确认取餐
     @PostMapping("/confirm/{orderNo}")
     public Result confirmOrder(@PathVariable String orderNo) {
-        // 发送订单状态更新消息，异步处理
         OrderStatusUpdateMessage message = new OrderStatusUpdateMessage();
         message.setOrderNo(orderNo);
-        message.setOrderStatus((byte) 2); // 订单完成
+        message.setOrderStatus((byte) 2);
         message.setTimestamp(System.currentTimeMillis());
         orderMessageProducer.sendOrderStatusUpdateMessage(message);
         return Result.success("取餐请求已提交，正在处理");
+    }
+
+    // 开始制作
+    @PostMapping("/make/{orderNo}")
+    public Result makeOrder(@PathVariable String orderNo) {
+        OrderStatusUpdateMessage message = new OrderStatusUpdateMessage();
+        message.setOrderNo(orderNo);
+        message.setOrderStatus((byte) 3);
+        message.setTimestamp(System.currentTimeMillis());
+        orderMessageProducer.sendOrderStatusUpdateMessage(message);
+        return Result.success("制作请求已提交，正在处理");
     }
 
     // 查询订单列表
@@ -102,16 +112,22 @@ public class OrdersController {
     // 更新订单状态
     @PostMapping("/updateStatus/{orderNo}")
     public Result updateOrderStatus(@PathVariable String orderNo, @RequestParam Byte status) {
-        //修改订单状态
-        ordersService.updateOrderStatus(orderNo, status);
-        // 发送订单状态更新消息，异步处理
         OrderStatusUpdateMessage message = new OrderStatusUpdateMessage();
         message.setOrderNo(orderNo);
         message.setOrderStatus(status);
         message.setTimestamp(System.currentTimeMillis());
         orderMessageProducer.sendOrderStatusUpdateMessage(message);
         return Result.success("状态更新请求已提交，正在处理");
+    }
 
+    // 管理员分页查询所有订单
+    @GetMapping("/admin/page")
+    public Result getAllOrdersPage(@RequestParam(defaultValue = "1") Integer page,
+                                   @RequestParam(defaultValue = "10") Integer size,
+                                   @RequestParam(required = false) Byte status,
+                                   @RequestParam(required = false) Long storeId) {
+        Page<Orders> ordersPage = ordersService.getAllOrdersPage(page, size, status, storeId);
+        return Result.success(ordersPage);
     }
 
 }

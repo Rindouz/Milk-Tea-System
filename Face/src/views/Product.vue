@@ -97,6 +97,19 @@
         <el-form-item label="库存" prop="stock">
           <el-input-number v-model="productForm.stock" min="0" placeholder="请输入库存" />
         </el-form-item>
+        <el-form-item label="商品图片" prop="image">
+          <el-upload
+            class="avatar-uploader"
+            :action="uploadUrl"
+            :show-file-list="false"
+            :on-success="handleImageSuccess"
+            :before-upload="beforeImageUpload"
+            name="file"
+          >
+            <img v-if="productForm.image" :src="productForm.image" class="avatar" />
+            <el-icon v-else class="avatar-uploader-icon"><Plus /></el-icon>
+          </el-upload>
+        </el-form-item>
         <el-form-item label="描述" prop="description">
           <el-input v-model="productForm.description" type="textarea" placeholder="请输入商品描述" />
         </el-form-item>
@@ -140,9 +153,32 @@ const productForm = reactive({
   storeId: null,
   price: 0,
   stock: 0,
+  image: '',
   description: '',
   status: 1
 })
+
+const uploadUrl = '/api/product/uploadImage'
+
+const handleImageSuccess = (response) => {
+  if (response.code === 200) {
+    productForm.image = response.data
+  } else {
+    ElMessage.error('图片上传失败')
+  }
+}
+
+const beforeImageUpload = (file) => {
+  const isImage = file.type.startsWith('image/')
+  const isLt10M = file.size / 1024 / 1024 < 10
+  if (!isImage) {
+    ElMessage.error('只能上传图片文件')
+  }
+  if (!isLt10M) {
+    ElMessage.error('图片大小不能超过10MB')
+  }
+  return isImage && isLt10M
+}
 
 const rules = {
   productName: [
@@ -242,6 +278,7 @@ const handleAdd = () => {
   productForm.storeId = null
   productForm.price = 0
   productForm.stock = 0
+  productForm.image = ''
   productForm.description = ''
   productForm.status = 1
   dialogVisible.value = true
@@ -256,6 +293,7 @@ const handleEdit = (row) => {
   productForm.storeId = row.storeId
   productForm.price = row.price
   productForm.stock = row.stock
+  productForm.image = row.image || ''
   productForm.description = row.description
   productForm.status = row.status
   dialogVisible.value = true
@@ -345,5 +383,36 @@ onMounted(() => {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
+}
+
+.avatar-uploader {
+  border: 1px dashed #d9d9d9;
+  border-radius: 6px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  width: 120px;
+  height: 120px;
+}
+
+.avatar-uploader:hover {
+  border-color: #409eff;
+}
+
+.avatar-uploader-icon {
+  font-size: 28px;
+  color: #8c939d;
+  width: 120px;
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.avatar {
+  width: 120px;
+  height: 120px;
+  display: block;
+  object-fit: cover;
 }
 </style>

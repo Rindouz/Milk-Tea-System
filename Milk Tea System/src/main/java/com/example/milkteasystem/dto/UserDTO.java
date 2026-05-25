@@ -8,6 +8,7 @@ public class UserDTO {
     private Long userId;
     private String nickname;
     private String avatar;
-    private String phone; // 解密后的手机号
+    private String phone;
+    private Integer status;
     private LocalDateTime createTime;
 }

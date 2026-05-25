@@ -88,42 +88,30 @@ const adjustRules = {
 // 获取库存列表
 const getInventoryList = async () => {
   try {
-    // 先获取所有商品列表（包括下架的）
-    const productResponse = await request.get('/product/all')
+    const [productResponse, inventoryResponse] = await Promise.all([
+      request.get('/product/all'),
+      request.get('/inventory/all')
+    ])
     const products = productResponse.data || []
-    
-    // 遍历商品获取库存信息
-    const inventoryPromises = products.map(async (product) => {
-      try {
-        // 获取库存
-        const stockResponse = await request.get(`/inventory/stock/${product.productId}`)
-        const stock = stockResponse.data || 0
-        
-        // 获取已售数量
-        const soldResponse = await request.get(`/inventory/sold/${product.productId}`)
-        const soldCount = soldResponse.data || 0
-        
-        return {
-          productId: product.productId,
-          productName: product.productName,
-          stock,
-          soldCount
-        }
-      } catch (error) {
-        return {
-          productId: product.productId,
-          productName: product.productName,
-          stock: 0,
-          soldCount: 0
-        }
+    const inventories = inventoryResponse.data || []
+
+    const inventoryMap = {}
+    inventories.forEach(inv => {
+      inventoryMap[inv.productId] = inv
+    })
+
+    inventoryList.value = products.map(product => {
+      const inv = inventoryMap[product.productId] || {}
+      return {
+        productId: product.productId,
+        productName: product.productName,
+        stock: inv.stock || 0,
+        soldCount: inv.sold || 0
       }
     })
-    
-    inventoryList.value = await Promise.all(inventoryPromises)
-    
-    // 过滤搜索
+
     if (searchForm.productName) {
-      inventoryList.value = inventoryList.value.filter(item => 
+      inventoryList.value = inventoryList.value.filter(item =>
         item.productName.includes(searchForm.productName)
       )
     }

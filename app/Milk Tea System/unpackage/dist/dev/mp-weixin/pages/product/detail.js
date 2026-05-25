@@ -35,9 +35,6 @@ const _sfc_main = {
     const addToCart = () => {
       cartStore.addItem(product.value, quantity.value);
       common_vendor.index.showToast({ title: "已加入购物车", icon: "success", duration: 1500 });
-      setTimeout(() => {
-        common_vendor.index.switchTab({ url: "/pages/cart/index" });
-      }, 1200);
     };
     return (_ctx, _cache) => {
       return common_vendor.e({

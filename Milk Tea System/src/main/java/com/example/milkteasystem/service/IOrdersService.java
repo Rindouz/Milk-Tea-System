@@ -37,6 +37,8 @@ public interface IOrdersService extends IService<Orders> {
     List<Orders> getUserOrders(Long userId, Byte status);
     //分页查询用户订单列表
     Page<Orders> getUserOrdersPage(Integer page, Integer size, Long userId, Byte status);
+    //管理员分页查询所有订单
+    Page<Orders> getAllOrdersPage(Integer page, Integer size, Byte status, Long storeId);
     //查询订单详情
     OrderDetailDTO getOrderDetail(String orderNo);
     //更新订单状态

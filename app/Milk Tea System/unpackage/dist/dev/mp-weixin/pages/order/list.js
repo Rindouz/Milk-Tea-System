@@ -1,9 +1,11 @@
 "use strict";
 const common_vendor = require("../../common/vendor.js");
 const api_index = require("../../api/index.js");
+const store_auth = require("../../store/auth.js");
 const _sfc_main = {
   __name: "list",
   setup(__props) {
+    const authStore = store_auth.useAuthStore();
     const statusTabs = [
       { label: "全部", value: null },
       { label: "待支付", value: 0 },
@@ -30,7 +32,11 @@ const _sfc_main = {
     const loadOrders = async () => {
       loading.value = true;
       try {
-        const userId = common_vendor.index.getStorageSync("userId") || 1;
+        const userId = authStore.userId;
+        if (!userId) {
+          orderList.value = [];
+          return;
+        }
         const res = await api_index.orderApi.list(userId, activeStatus.value);
         orderList.value = res.data || [];
       } catch (e) {
@@ -73,6 +79,15 @@ ${itemsText}`,
         }
       }
     };
+    const payOrder = async (orderNo) => {
+      try {
+        await api_index.orderApi.pay(orderNo);
+        common_vendor.index.showToast({ title: "支付成功", icon: "success" });
+        loadOrders();
+      } catch (e) {
+        common_vendor.index.showToast({ title: "支付失败", icon: "none" });
+      }
+    };
     common_vendor.onMounted(() => {
       loadOrders();
     });
@@ -97,10 +112,11 @@ ${itemsText}`,
             e: common_vendor.t(order.createTime),
             f: order.orderStatus === 0
           }, order.orderStatus === 0 ? {
-            g: common_vendor.o(($event) => cancelOrder(order.orderNo), order.orderNo)
+            g: common_vendor.o(($event) => payOrder(order.orderNo), order.orderNo),
+            h: common_vendor.o(($event) => cancelOrder(order.orderNo), order.orderNo)
           } : {}, {
-            h: order.orderNo,
-            i: common_vendor.o(($event) => showDetail(order), order.orderNo)
+            i: order.orderNo,
+            j: common_vendor.o(($event) => showDetail(order), order.orderNo)
           });
         }),
         d: common_vendor.o(onRefresh, "88")

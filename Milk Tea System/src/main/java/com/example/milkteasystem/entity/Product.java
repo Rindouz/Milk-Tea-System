@@ -61,6 +61,12 @@ public class Product implements Serializable {
     private String description;
 
     /**
+     * 库存
+     */
+    @TableField(exist = false)
+    private Integer stock;
+
+    /**
      * 状态（0下架 1上架）
      */
     private Byte status;

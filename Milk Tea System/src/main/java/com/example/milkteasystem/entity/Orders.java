@@ -51,7 +51,7 @@ public class Orders implements Serializable {
     private BigDecimal totalAmount;
 
     /**
-     * 订单状态（0待支付 1待取餐 3制作中 2已完成 4已取消）
+     * 订单状态（0待支付 1制作中 2待取餐 3已完成 4已取消）
      */
     private Byte orderStatus;
 
@@ -80,4 +80,9 @@ public class Orders implements Serializable {
      * 支付时间
      */
     private LocalDateTime payTime;
+
+    /**
+     * 完成时间
+     */
+    private LocalDateTime completeTime;
 }

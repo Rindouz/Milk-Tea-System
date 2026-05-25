@@ -3,7 +3,11 @@ import request from '@/utils/request'
 // 用户相关
 export const userApi = {
   login: (username, password) => request.get('/user/doLogin', { username, password }),
-  wechatLogin: (code) => request.post(`/user/wechatLogin?code=${code}`),
+  wechatLogin: (code, clientId) => {
+    let url = `/user/wechatLogin?code=${code}`
+    if (clientId) url += `&clientId=${clientId}`
+    return request.post(url)
+  },
   updateWechatInfo: (data) => request.post('/user/updateWechatInfo', data),
   getUserOrders: (pageNum = 1, pageSize = 10) => request.get('/user/orders', { pageNum, pageSize })
 }

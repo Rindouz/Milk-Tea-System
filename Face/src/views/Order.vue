@@ -10,13 +10,19 @@
         <el-form-item label="订单号">
           <el-input v-model="searchForm.orderNo" placeholder="请输入订单号" />
         </el-form-item>
+        <el-form-item label="门店">
+          <el-select v-model="searchForm.storeId" placeholder="请选择门店" clearable @change="getOrderList">
+            <el-option label="全部门店" :value="null" />
+            <el-option v-for="store in storeList" :key="store.storeId" :label="store.storeName" :value="store.storeId" />
+          </el-select>
+        </el-form-item>
         <el-form-item label="状态">
           <el-select v-model="searchForm.status" placeholder="请选择状态">
             <el-option label="全部" value="" />
             <el-option label="待支付" value="0" />
+            <el-option label="制作中" value="3" />
             <el-option label="待取餐" value="1" />
             <el-option label="已完成" value="2" />
-            <el-option label="制作中" value="3" />
             <el-option label="已取消" value="4" />
           </el-select>
         </el-form-item>
@@ -50,8 +56,8 @@
               支付
             </el-button>
             <el-button 
-              v-if="scope.row.orderStatus === 1" 
-              type="warning" 
+              v-if="scope.row.orderStatus === 0" 
+              type="danger" 
               size="small" 
               @click="handleCancel(scope.row.orderNo)"
             >
@@ -59,6 +65,14 @@
             </el-button>
             <el-button 
               v-if="scope.row.orderStatus === 1" 
+              type="primary" 
+              size="small" 
+              @click="handleMake(scope.row.orderNo)"
+            >
+              开始制作
+            </el-button>
+            <el-button 
+              v-if="scope.row.orderStatus === 3" 
               type="info" 
               size="small" 
               @click="handleConfirm(scope.row.orderNo)"
@@ -77,12 +91,7 @@
       </el-table>
     </el-card>
 
-    <!-- 订单详情对话框 -->
-    <el-dialog
-      v-model="detailVisible"
-      title="订单详情"
-      width="800px"
-    >
+    <el-dialog v-model="detailVisible" title="订单详情" width="800px">
       <div v-if="orderDetail">
         <el-descriptions :column="1" border>
           <el-descriptions-item label="订单号">{{ orderDetail.orderNo }}</el-descriptions-item>
@@ -108,12 +117,7 @@
       </template>
     </el-dialog>
 
-    <!-- 修改订单状态对话框 -->
-    <el-dialog
-      v-model="updateStatusVisible"
-      title="修改订单状态"
-      width="400px"
-    >
+    <el-dialog v-model="updateStatusVisible" title="修改订单状态" width="400px">
       <el-form :model="updateStatusForm" ref="updateStatusFormRef">
         <el-form-item label="订单号" prop="orderNo">
           <el-input v-model="updateStatusForm.orderNo" disabled />
@@ -124,9 +128,9 @@
         <el-form-item label="新状态" prop="newStatus" required>
           <el-select v-model="updateStatusForm.newStatus" placeholder="请选择新状态">
             <el-option label="待支付" value="0" />
+            <el-option label="制作中" value="3" />
             <el-option label="待取餐" value="1" />
             <el-option label="已完成" value="2" />
-            <el-option label="制作中" value="3" />
             <el-option label="已取消" value="4" />
           </el-select>
         </el-form-item>
@@ -151,6 +155,7 @@ const orderDetail = ref(null)
 const detailVisible = ref(false)
 const updateStatusVisible = ref(false)
 const updateStatusFormRef = ref(null)
+const storeList = ref([])
 const updateStatusForm = reactive({
   orderNo: '',
   currentStatus: '',
@@ -158,19 +163,26 @@ const updateStatusForm = reactive({
 })
 const searchForm = reactive({
   orderNo: '',
-  status: ''
+  status: '',
+  storeId: null
 })
 
-// 获取订单列表
+const fetchStoreList = async () => {
+  try {
+    const response = await request.get('/store')
+    storeList.value = response.data || []
+  } catch (error) {
+    storeList.value = []
+  }
+}
+
 const getOrderList = async () => {
   try {
-    // 这里使用后端的订单列表API，暂时使用userId=1作为默认值
-    // 实际项目中应该从登录状态获取userId
-    const response = await request.get('/orders/user/page/1', {
-      params: {
-        status: searchForm.status || undefined
-      }
-    })
+    const params = {
+      status: searchForm.status || undefined,
+      storeId: searchForm.storeId || undefined
+    }
+    const response = await request.get('/orders/admin/page', { params })
     orderList.value = response.data.records || []
   } catch (error) {
     ElMessage.error('获取订单列表失败')
@@ -178,7 +190,6 @@ const getOrderList = async () => {
   }
 }
 
-// 获取订单详情
 const handleDetail = async (orderNo) => {
   try {
     const response = await request.get(`/orders/detail/${orderNo}`)
@@ -189,10 +200,9 @@ const handleDetail = async (orderNo) => {
   }
 }
 
-// 处理订单支付
 const handlePay = async (orderNo) => {
   try {
-    const response = await request.post(`/orders/pay/${orderNo}`)
+    await request.post(`/orders/pay/${orderNo}`)
     ElMessage.success('支付成功')
     getOrderList()
   } catch (error) {
@@ -200,10 +210,9 @@ const handlePay = async (orderNo) => {
   }
 }
 
-// 处理订单取消
 const handleCancel = async (orderNo) => {
   try {
-    const response = await request.post(`/orders/cancel/${orderNo}`)
+    await request.post(`/orders/cancel/${orderNo}`)
     ElMessage.success('取消成功')
     getOrderList()
   } catch (error) {
@@ -211,10 +220,9 @@ const handleCancel = async (orderNo) => {
   }
 }
 
-// 处理确认取餐
 const handleConfirm = async (orderNo) => {
   try {
-    const response = await request.post(`/orders/confirm/${orderNo}`)
+    await request.post(`/orders/confirm/${orderNo}`)
     ElMessage.success('取餐成功')
     getOrderList()
   } catch (error) {
@@ -222,7 +230,16 @@ const handleConfirm = async (orderNo) => {
   }
 }
 
-// 处理修改订单状态
+const handleMake = async (orderNo) => {
+  try {
+    await request.post(`/orders/make/${orderNo}`)
+    ElMessage.success('已开始制作')
+    getOrderList()
+  } catch (error) {
+    ElMessage.error('操作失败')
+  }
+}
+
 const handleUpdateStatus = (row) => {
   updateStatusForm.orderNo = row.orderNo
   updateStatusForm.currentStatus = getStatusText(row.orderStatus)
@@ -230,16 +247,11 @@ const handleUpdateStatus = (row) => {
   updateStatusVisible.value = true
 }
 
-// 处理状态提交
 const handleStatusSubmit = async () => {
   try {
-    // 调用后端的更新状态接口
     await request.post(`/orders/updateStatus/${updateStatusForm.orderNo}`, null, {
-      params: {
-        status: parseInt(updateStatusForm.newStatus)
-      }
+      params: { status: parseInt(updateStatusForm.newStatus) }
     })
-    
     ElMessage.success('状态更新成功')
     updateStatusVisible.value = false
     getOrderList()
@@ -248,64 +260,27 @@ const handleStatusSubmit = async () => {
   }
 }
 
-// 获取状态文本
 const getStatusText = (status) => {
-  const statusMap = {
-    0: '待支付',
-    1: '待取餐',
-    2: '已完成',
-    3: '制作中',
-    4: '已取消'
-  }
+  const statusMap = { 0: '待支付', 1: '待取餐', 2: '已完成', 3: '制作中', 4: '已取消' }
   return statusMap[status] || '未知'
 }
 
-// 获取状态标签类型
 const getStatusType = (status) => {
-  const typeMap = {
-    0: 'info',
-    1: 'success',
-    2: 'warning',
-    3: 'primary',
-    4: 'danger'
-  }
+  const typeMap = { 0: 'info', 1: 'success', 2: 'warning', 3: 'primary', 4: 'danger' }
   return typeMap[status] || 'info'
 }
 
-// 组件挂载时获取订单列表
 onMounted(() => {
+  fetchStoreList()
   getOrderList()
 })
 </script>
 
 <style scoped>
-.order-container {
-  width: 100%;
-}
-
-.card {
-  margin-bottom: 20px;
-}
-
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.card-header h2 {
-  font-size: 18px;
-  font-weight: bold;
-  margin: 0;
-}
-
-.search-form {
-  margin-bottom: 20px;
-}
-
-.dialog-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-}
+.order-container { width: 100%; }
+.card { margin-bottom: 20px; }
+.card-header { display: flex; justify-content: space-between; align-items: center; }
+.card-header h2 { font-size: 18px; font-weight: bold; margin: 0; }
+.search-form { margin-bottom: 20px; }
+.dialog-footer { display: flex; justify-content: flex-end; gap: 10px; }
 </style>

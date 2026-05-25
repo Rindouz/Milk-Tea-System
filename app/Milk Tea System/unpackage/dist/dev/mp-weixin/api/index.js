@@ -2,7 +2,12 @@
 const utils_request = require("../utils/request.js");
 const userApi = {
   login: (username, password) => utils_request.request.get("/user/doLogin", { username, password }),
-  wechatLogin: (code) => utils_request.request.post(`/user/wechatLogin?code=${code}`),
+  wechatLogin: (code, clientId) => {
+    let url = `/user/wechatLogin?code=${code}`;
+    if (clientId)
+      url += `&clientId=${clientId}`;
+    return utils_request.request.post(url);
+  },
   updateWechatInfo: (data) => utils_request.request.post("/user/updateWechatInfo", data),
   getUserOrders: (pageNum = 1, pageSize = 10) => utils_request.request.get("/user/orders", { pageNum, pageSize })
 };

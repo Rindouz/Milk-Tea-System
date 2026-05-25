@@ -4,10 +4,7 @@
       <template #header>
         <div class="card-header">
           <h2>用户管理</h2>
-          <el-button type="primary" @click="handleAdd">
-            <el-icon><Plus /></el-icon>
-            添加用户
-          </el-button>
+          <span class="card-tip">用户在小程序端首次登录后自动录入</span>
         </div>
       </template>
       <el-form :inline="true" :model="searchForm" class="search-form">
@@ -21,15 +18,47 @@
       <el-table :data="userList" style="width: 100%">
         <el-table-column prop="userId" label="用户ID" width="120" />
         <el-table-column prop="nickname" label="昵称" width="150" />
-        <el-table-column prop="phone" label="手机号" width="150" />
+        <el-table-column label="手机号" width="180">
+          <template #default="scope">
+            <span v-if="phoneVisible[scope.row.userId]">{{ scope.row.phone }}</span>
+            <span v-else style="color: #999; font-style: italic;">加密手机号</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="手机号操作" width="120">
+          <template #default="scope">
+            <el-button size="small" text @click="togglePhone(scope.row.userId)">
+              {{ phoneVisible[scope.row.userId] ? '隐藏' : '显示' }}
+            </el-button>
+          </template>
+        </el-table-column>
+        <el-table-column prop="status" label="状态" width="100">
+          <template #default="scope">
+            <el-tag :type="scope.row.status === 1 ? 'success' : 'danger'">
+              {{ scope.row.status === 1 ? '启用' : '禁用' }}
+            </el-tag>
+          </template>
+        </el-table-column>
         <el-table-column prop="createTime" label="创建时间" />
-        <el-table-column label="操作" width="200">
+        <el-table-column label="操作" width="220">
           <template #default="scope">
             <el-button type="primary" size="small" @click="handleEdit(scope.row)">
               编辑
             </el-button>
-            <el-button type="danger" size="small" @click="handleDelete(scope.row.userId)">
-              删除
+            <el-button
+              v-if="scope.row.status === 1"
+              type="warning"
+              size="small"
+              @click="handleToggleStatus(scope.row, 0)"
+            >
+              禁用
+            </el-button>
+            <el-button
+              v-else
+              type="success"
+              size="small"
+              @click="handleToggleStatus(scope.row, 1)"
+            >
+              启用
             </el-button>
           </template>
         </el-table-column>
@@ -47,12 +76,7 @@
       </div>
     </el-card>
 
-    <!-- 添加/编辑用户对话框 -->
-    <el-dialog
-      v-model="dialogVisible"
-      :title="dialogTitle"
-      width="400px"
-    >
+    <el-dialog v-model="dialogVisible" title="编辑用户" width="400px">
       <el-form :model="userForm" :rules="rules" ref="userFormRef">
         <el-form-item label="昵称" prop="nickname">
           <el-input v-model="userForm.nickname" placeholder="请输入昵称" />
@@ -74,16 +98,15 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import request from '../utils/request'
-import { ElMessage } from 'element-plus'
-import { Plus } from '@element-plus/icons-vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
 
 const userList = ref([])
 const currentPage = ref(1)
 const pageSize = ref(5)
 const total = ref(0)
 const dialogVisible = ref(false)
-const dialogTitle = ref('添加用户')
 const userFormRef = ref(null)
+const phoneVisible = reactive({})
 const searchForm = reactive({
   phone: ''
 })
@@ -102,7 +125,6 @@ const rules = {
   ]
 }
 
-// 获取用户列表
 const getUserList = async () => {
   try {
     const response = await request.get('/user/page', {
@@ -114,59 +136,52 @@ const getUserList = async () => {
     })
     userList.value = response.data.records
     total.value = response.data.total
+
+    userList.value.forEach(u => {
+      if (!(u.userId in phoneVisible)) {
+        phoneVisible[u.userId] = true
+      }
+    })
   } catch (error) {
     ElMessage.error('获取用户列表失败')
   }
 }
 
-// 处理添加用户
-const handleAdd = () => {
-  dialogTitle.value = '添加用户'
-  userForm.userId = null
-  userForm.nickname = ''
-  userForm.phone = ''
-  dialogVisible.value = true
+const togglePhone = (userId) => {
+  phoneVisible[userId] = !phoneVisible[userId]
 }
 
-// 处理编辑用户
 const handleEdit = (row) => {
-  dialogTitle.value = '编辑用户'
   userForm.userId = row.userId
   userForm.nickname = row.nickname
   userForm.phone = row.phone
   dialogVisible.value = true
 }
 
-// 处理删除用户
-const handleDelete = async (userId) => {
+const handleToggleStatus = async (row, status) => {
+  const label = status === 1 ? '启用' : '禁用'
   try {
-    const response = await request.delete(`/user/${userId}`)
-    ElMessage.success('删除用户成功')
+    await ElMessageBox.confirm(`确定要${label}该用户吗？`, '确认操作')
+    await request.put(`/user/${row.userId}/status`, null, {
+      params: { status }
+    })
+    ElMessage.success(`${label}用户成功`)
     getUserList()
   } catch (error) {
-    ElMessage.error('删除用户失败')
+    if (error !== 'cancel') {
+      ElMessage.error(`${label}用户失败`)
+    }
   }
 }
 
-// 处理提交
 const handleSubmit = async () => {
   try {
     await userFormRef.value.validate()
-    let response
-    if (userForm.userId) {
-      // 编辑
-      response = await request.put(`/user/${userForm.userId}`, {
-        nickname: userForm.nickname,
-        phone: userForm.phone
-      })
-    } else {
-      // 添加
-      response = await request.post('/user', {
-        nickname: userForm.nickname,
-        phone: userForm.phone
-      })
-    }
-    ElMessage.success(userForm.userId ? '编辑用户成功' : '添加用户成功')
+    await request.put(`/user/${userForm.userId}`, {
+      nickname: userForm.nickname,
+      phone: userForm.phone
+    })
+    ElMessage.success('编辑用户成功')
     dialogVisible.value = false
     getUserList()
   } catch (error) {
@@ -174,58 +189,28 @@ const handleSubmit = async () => {
   }
 }
 
-// 处理分页大小变化
 const handleSizeChange = (size) => {
   pageSize.value = size
   getUserList()
 }
 
-// 处理当前页变化
 const handleCurrentChange = (current) => {
   currentPage.value = current
   getUserList()
 }
 
-// 组件挂载时获取用户列表
 onMounted(() => {
   getUserList()
 })
 </script>
 
 <style scoped>
-.user-container {
-  width: 100%;
-}
-
-.card {
-  margin-bottom: 20px;
-}
-
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.card-header h2 {
-  font-size: 18px;
-  font-weight: bold;
-  margin: 0;
-}
-
-.search-form {
-  margin-bottom: 20px;
-}
-
-.pagination-container {
-  margin-top: 20px;
-  display: flex;
-  justify-content: flex-end;
-}
-
-.dialog-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-}
+.user-container { width: 100%; }
+.card { margin-bottom: 20px; }
+.card-header { display: flex; justify-content: space-between; align-items: center; }
+.card-header h2 { font-size: 18px; font-weight: bold; margin: 0; }
+.card-tip { font-size: 12px; color: #999; }
+.search-form { margin-bottom: 20px; }
+.pagination-container { margin-top: 20px; display: flex; justify-content: flex-end; }
+.dialog-footer { display: flex; justify-content: flex-end; gap: 10px; }
 </style>

@@ -12,75 +12,58 @@ import com.example.milkteasystem.entity.Orders;
 import com.example.milkteasystem.entity.User;
 import com.example.milkteasystem.service.IOrdersService;
 import com.example.milkteasystem.service.IUserService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-/**
- * <p>
- * 用户表 前端控制器
- * </p>
- *
- * @author 韦宇翔
- * @since 2026-03-01
- */
 @RestController
 @RequestMapping("/milkteasystem/user")
 public class UserController {
+
+    private static final Logger log = LoggerFactory.getLogger(UserController.class);
+
     @Autowired
-    private IUserService userService ;
-    
+    private IUserService userService;
+
     @Autowired
     private IOrdersService ordersService;
-    /**
-     * 添加用户
-     * @param userCreateDTO 用户创建DTO
-     * @return 操作结果
-     */
+
     @PostMapping
-    public Result save(@RequestBody UserCreateDTO userCreateDTO){
+    public Result save(@RequestBody UserCreateDTO userCreateDTO) {
         try {
             userService.createUser(userCreateDTO);
+            log.info("管理员创建用户: nickname={}", userCreateDTO.getNickname());
             return Result.success();
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("保存用户信息失败", e);
             return Result.error("保存用户信息失败");
         }
     }
-    /**
-     * 修改用户
-     * @param id 用户ID
-     * @param userUpdateDTO 用户更新DTO
-     * @return 操作结果
-     */
+
     @PutMapping("/{id}")
-    public Result update(@PathVariable Long id, @RequestBody UserUpdateDTO userUpdateDTO){
+    public Result update(@PathVariable Long id, @RequestBody UserUpdateDTO userUpdateDTO) {
         try {
             boolean result = userService.updateUser(id, userUpdateDTO);
             if (result) {
+                log.info("管理员更新用户: userId={}", id);
                 return Result.success();
             } else {
                 return Result.error("用户不存在");
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("更新用户信息失败", e);
             return Result.error("更新用户信息失败");
         }
     }
-    /**
-     * 查询所有用户
-     * @return 用户列表
-     */
+
     @GetMapping
-    public Result getAll(){
+    public Result getAll() {
         return Result.success(userService.getAllUserDTOs());
     }
-    /**
-     * 根据id查询用户
-     * @param id 用户ID
-     * @return 用户信息
-     */
+
     @GetMapping("/{id}")
-    public Result getoneByid(@PathVariable Long id){
+    public Result getoneByid(@PathVariable Long id) {
         UserDTO userDTO = userService.getUserDTO(id);
         if (userDTO != null) {
             return Result.success(userDTO);
@@ -88,175 +71,160 @@ public class UserController {
             return Result.error("用户不存在");
         }
     }
-    /**
-     * 删除用户
-     * @param id
-     * @return
-     */
+
     @DeleteMapping("/{id}")
-    public Result deleteByid(@PathVariable Long id){
+    public Result deleteByid(@PathVariable Long id) {
+        log.warn("管理员删除用户: userId={}", id);
         return Result.success(userService.removeById(id));
     }
-    /**
-     * 用户分页
-     * @param pageNum
-     * @param pageSize
-     * @return
-     */
+
     @GetMapping("/page")
-    public Result page(@RequestParam(defaultValue = "1") Integer pageNum, @RequestParam(defaultValue = "5") Integer pageSize,@RequestParam(defaultValue ="") String phone){
-        LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
-        if (!"".equals(phone)){
-            queryWrapper.eq(User::getPhone,phone);
-        }
+    public Result page(@RequestParam(defaultValue = "1") Integer pageNum,
+                       @RequestParam(defaultValue = "5") Integer pageSize,
+                       @RequestParam(defaultValue = "") String phone) {
         return Result.success(
-          userService.page(new Page<>(pageNum,pageSize),queryWrapper)
+                userService.getUserDTOPage(pageNum, pageSize, phone)
         );
     }
 
-
-    /**
-     * 用户登录
-     * @param username 用户名
-     * @param password 密码
-     * @return 登录结果
-     */
-
-    @RequestMapping("doLogin")
+    @GetMapping("/doLogin")
     public Result doLogin(@RequestParam String username, @RequestParam String password) {
         try {
-            // 1. 验证用户名和密码
             User user = userService.login(username, password);
             if (user == null) {
+                log.warn("管理员登录失败: username={}", username);
                 return Result.error("用户名或密码错误");
             }
 
-            // 2. 登录并生成Token
             StpUtil.login(user.getUserId());
             SaTokenInfo tokenInfo = StpUtil.getTokenInfo();
-
-            // 3. 返回登录结果
+            log.info("管理员登录成功: userId={}", user.getUserId());
             return Result.success(tokenInfo);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("登录失败", e);
             return Result.error("登录失败：" + e.getMessage());
         }
     }
 
-
-
-    /**
-     * 微信授权登录
-     * @param code 微信登录code
-     * @return 登录结果
-     */
     @PostMapping("/wechatLogin")
-    public Result wechatLogin(@RequestParam String code) {
+    public Result wechatLogin(@RequestParam String code, @RequestParam(required = false) String clientId) {
         try {
-            // 这里应该调用微信API获取openid，实际项目中需要实现
-            // 模拟获取openid
-            String openid = "mock_openid_" + System.currentTimeMillis();
-            
-            // 根据openid查询用户
-            User user = userService.getUserByOpenid(openid);
-            
-            // 如果用户不存在，创建新用户
-            if (user == null) {
-                user = new User();
-                user.setOpenid(openid);
-                userService.save(user);
+            log.info("微信登录请求: code={} clientId={}",
+                    code.substring(0, Math.min(10, code.length())) + "...",
+                    clientId != null ? clientId : "null");
+
+            User user;
+            // 如果提供了clientId，使用clientId作为openid（开发调试/降级）
+            if (clientId != null && !clientId.isEmpty()) {
+                user = userService.loginByClientId(clientId);
+            } else {
+                user = userService.loginByWechatCode(code);
             }
-            
-            // 登录
+
+            if (user.getStatus() != null && user.getStatus() == 0) {
+                return Result.error("账户已被禁用");
+            }
+
             StpUtil.login(user.getUserId());
             SaTokenInfo tokenInfo = StpUtil.getTokenInfo();
-            
-            return Result.success(tokenInfo);
+
+            UserDTO userDTO = userService.getUserDTO(user.getUserId());
+            userDTO.setPhone(null);
+
+            log.info("微信登录成功: userId={}, openid={}", user.getUserId(), user.getOpenid());
+            User finalUser = user;
+            return Result.success(new Object() {
+                public final String tokenValue = tokenInfo.getTokenValue();
+                public final String tokenName = tokenInfo.getTokenName();
+                public final Long loginId = finalUser.getUserId();
+                public final String nickname = userDTO.getNickname();
+                public final String avatar = userDTO.getAvatar();
+            });
         } catch (Exception e) {
-            e.printStackTrace();
-            return Result.error("微信登录失败");
+            log.error("微信登录失败", e);
+            return Result.error("微信登录失败: " + e.getMessage());
         }
     }
 
-    /**
-     * 更新微信用户信息
-     * @param userUpdateDTO 用户更新DTO
-     * @return 更新结果
-     */
     @PostMapping("/updateWechatInfo")
     public Result updateWechatInfo(@RequestBody UserUpdateDTO userUpdateDTO) {
         try {
-            // 获取当前登录用户ID
             Long userId = StpUtil.getLoginIdAsLong();
-            
             boolean result = userService.updateWechatInfo(userId, userUpdateDTO.getNickname(), userUpdateDTO.getAvatar());
             if (result) {
+                log.info("用户更新微信信息: userId={}", userId);
                 return Result.success();
             } else {
                 return Result.error("用户不存在");
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("更新微信用户信息失败", e);
             return Result.error("更新微信用户信息失败");
         }
     }
 
-
-
-
-    // 查询登录状态，浏览器访问： http://localhost:8080/user/isLogin
-    @RequestMapping("isLogin")
+    @GetMapping("/isLogin")
     public String isLogin() {
         return "当前会话是否登录：" + StpUtil.isLogin();
     }
 
-    /**
-     * 修改个人信息
-     * @param userUpdateDTO 用户更新DTO
-     * @return 更新结果
-     */
     @PostMapping("/updatePersonalInfo")
     public Result updatePersonalInfo(@RequestBody UserUpdateDTO userUpdateDTO) {
         try {
-            // 获取当前登录用户ID
             Long userId = StpUtil.getLoginIdAsLong();
-            
             boolean result = userService.updateUser(userId, userUpdateDTO);
             if (result) {
+                log.info("用户更新个人信息: userId={}", userId);
                 return Result.success();
             } else {
                 return Result.error("用户不存在");
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("更新个人信息失败", e);
             return Result.error("更新个人信息失败");
         }
     }
-    
-    /**
-     * 查询个人订单列表
-     * @param pageNum 页码
-     * @param pageSize 每页数量
-     * @return 订单列表
-     */
+
     @GetMapping("/orders")
-    public Result getPersonalOrders(@RequestParam(defaultValue = "1") Integer pageNum, @RequestParam(defaultValue = "5") Integer pageSize) {
+    public Result getPersonalOrders(@RequestParam(defaultValue = "1") Integer pageNum,
+                                    @RequestParam(defaultValue = "5") Integer pageSize) {
         try {
-            // 获取当前登录用户ID
             Long userId = StpUtil.getLoginIdAsLong();
-            
-            // 查询订单列表
             LambdaQueryWrapper<Orders> queryWrapper = new LambdaQueryWrapper<>();
             queryWrapper.eq(Orders::getUserId, userId);
             queryWrapper.orderByDesc(Orders::getCreateTime);
-            
             Page<Orders> page = ordersService.page(new Page<>(pageNum, pageSize), queryWrapper);
             return Result.success(page);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("查询订单列表失败", e);
             return Result.error("查询订单列表失败");
         }
     }
 
+    @PutMapping("/{id}/status")
+    public Result updateUserStatus(@PathVariable Long id, @RequestParam Integer status) {
+        try {
+            boolean result = userService.setUserStatus(id, status);
+            if (result) {
+                log.info("管理员{}用户: userId={}", status == 1 ? "启用" : "禁用", id);
+                return Result.success();
+            } else {
+                return Result.error("用户不存在");
+            }
+        } catch (Exception e) {
+            log.error("更新用户状态失败", e);
+            return Result.error("更新用户状态失败");
+        }
+    }
 
+    @GetMapping("/current")
+    public Result getCurrentUser() {
+        try {
+            Long userId = StpUtil.getLoginIdAsLong();
+            UserDTO userDTO = userService.getUserDTO(userId);
+            return Result.success(userDTO);
+        } catch (Exception e) {
+            return Result.error("获取当前用户信息失败");
+        }
+    }
 }

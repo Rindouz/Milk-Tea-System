@@ -1,6 +1,5 @@
 <template>
 	<view class="container">
-		<!-- 订单商品 -->
 		<view class="section">
 			<view class="section-title">订单详情</view>
 			<view class="order-item" v-for="item in cartStore.items" :key="item.productId">
@@ -13,7 +12,6 @@
 			</view>
 		</view>
 
-		<!-- 取餐信息 -->
 		<view class="section">
 			<view class="section-title">取餐信息</view>
 			<view class="form-item">
@@ -34,7 +32,6 @@
 			</view>
 		</view>
 
-		<!-- 合计 -->
 		<view class="section">
 			<view class="total-row">
 				<text class="total-label">合计</text>
@@ -42,7 +39,6 @@
 			</view>
 		</view>
 
-		<!-- 提交按钮 -->
 		<view class="submit-bar">
 			<button class="submit-btn" :loading="submitting" @click="submitOrder">提交订单</button>
 		</view>
@@ -50,11 +46,13 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useCartStore } from '@/store/cart'
+import { useAuthStore } from '@/store/auth'
 import { orderApi } from '@/api/index'
 
 const cartStore = useCartStore()
+const authStore = useAuthStore()
 const defaultImg = '/static/logo.png'
 const submitting = ref(false)
 const storeName = ref(uni.getStorageSync('storeName') || '未知')
@@ -63,6 +61,13 @@ const form = reactive({
 	takeName: '',
 	takePhone: '',
 	remark: ''
+})
+
+onMounted(() => {
+	if (authStore.isLogin) {
+		form.takeName = authStore.nickname !== '未登录' ? authStore.nickname : ''
+		form.takePhone = authStore.phone || ''
+	}
 })
 
 const submitOrder = async () => {
@@ -86,7 +91,7 @@ const submitOrder = async () => {
 		}))
 
 		await orderApi.create({
-			userId: uni.getStorageSync('userId') || 1,
+			userId: authStore.userId,
 			storeId: uni.getStorageSync('storeId'),
 			takeName: form.takeName,
 			takePhone: form.takePhone,

@@ -15,8 +15,20 @@
 }
 .login-btn.data-v-79e6a490 { background: #fff; color: #d4a574; border-radius: 20px; font-size: 13px; height: 34px; line-height: 34px; padding: 0 16px; border: none;
 }
+.section.data-v-79e6a490 { background: #fff; margin: 12px; border-radius: 10px; padding: 16px;
+}
+.section-title.data-v-79e6a490 { font-size: 15px; font-weight: 700; margin-bottom: 12px;
+}
+.info-row.data-v-79e6a490 { display: flex; align-items: center;
+}
+.info-label.data-v-79e6a490 { width: 60px; font-size: 14px; color: #666; flex-shrink: 0;
+}
+.info-input.data-v-79e6a490 { flex: 1; font-size: 14px; text-align: right; border: 1px solid #eee; border-radius: 6px; padding: 8px 12px; margin: 0 8px;
+}
+.save-btn.data-v-79e6a490 { flex-shrink: 0; background: #d4a574; color: #fff; border: none; border-radius: 14px; font-size: 12px;
+}
 .stats-card.data-v-79e6a490 {
-	display: flex; background: #fff; margin: -10px 12px 12px; padding: 16px 0;
+	display: flex; background: #fff; margin: 12px; padding: 16px 0;
 	border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);
 }
 .stat-item.data-v-79e6a490 { flex: 1; text-align: center;
