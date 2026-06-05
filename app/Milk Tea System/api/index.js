@@ -6,7 +6,7 @@ export const userApi = {
   wechatLogin: (code, clientId) => {
     let url = `/user/wechatLogin?code=${code}`
     if (clientId) url += `&clientId=${clientId}`
-    return request.post(url)
+    return request.post(url, {})
   },
   updateWechatInfo: (data) => request.post('/user/updateWechatInfo', data),
   getUserOrders: (pageNum = 1, pageSize = 10) => request.get('/user/orders', { pageNum, pageSize })

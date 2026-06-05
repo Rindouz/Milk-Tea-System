@@ -32,6 +32,10 @@
             <el-icon><User /></el-icon>
             <span>用户管理</span>
           </el-menu-item>
+          <el-menu-item index="/mock-order">
+            <el-icon><ShoppingCart /></el-icon>
+            <span>模拟下单</span>
+          </el-menu-item>
         </el-menu>
       </el-aside>
       <el-container>
@@ -71,7 +75,8 @@ import {
   UserFilled, 
   ArrowDown,
   List,
-  House 
+  House,
+  ShoppingCart
 } from '@element-plus/icons-vue'
 
 const router = useRouter()

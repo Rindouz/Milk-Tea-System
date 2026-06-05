@@ -35,6 +35,11 @@ const routes = [
         path: 'user',
         name: 'User',
         component: () => import('../views/User.vue')
+      },
+      {
+        path: 'mock-order',
+        name: 'MockOrder',
+        component: () => import('../views/MockOrder.vue')
       }
     ]
   },

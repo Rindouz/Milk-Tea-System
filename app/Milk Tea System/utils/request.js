@@ -12,13 +12,17 @@ const cleanData = (data) => {
   return cleaned
 }
 
+// 真机调试时请将 localhost 改为电脑局域网 IP，例如：
+// const BASE_URL = 'http://192.168.1.100:8080/milkteasystem'
+
 const request = (url, options = {}) => {
   return new Promise((resolve, reject) => {
     const token = uni.getStorageSync('satoken')
+    const method = options.method || 'GET'
     uni.request({
       url: BASE_URL + url,
-      method: options.method || 'GET',
-      data: cleanData(options.data),
+      method: method,
+      data: cleanData(options.data) || (method === 'POST' ? {} : undefined),
       header: {
         'Content-Type': 'application/json',
         'satoken': token || ''
